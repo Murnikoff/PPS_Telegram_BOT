@@ -4,7 +4,6 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import Message
 from aiogram.filters import Command
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram import Router
 from dotenv import load_dotenv
 from utils.db import init_db
 
@@ -32,11 +31,6 @@ dp = Dispatcher(storage=storage)
 from handlers.user_handlers import router as user_router
 
 dp.include_router(user_router)
-
-@dp.message(Command("start"))
-@dp.message(Command("help"))
-async def send_welcome(message: Message):
-    await message.reply("Привет! Я бот для управления делами. Используйте /create_task для создания нового дела.")
 
 if __name__ == '__main__':
     dp.run_polling(bot)

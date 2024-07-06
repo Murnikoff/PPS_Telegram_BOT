@@ -9,6 +9,7 @@ def init_db():
             user_id INTEGER,
             title TEXT,
             description TEXT,
+            status TEXT DEFAULT 'active',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -23,3 +24,13 @@ def add_task(user_id, title, description):
     ''', (user_id, title, description))
     conn.commit()
     conn.close()
+
+def get_active_task(user_id):
+    conn = sqlite3.connect('tasks.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id, title, description FROM tasks WHERE user_id = ? AND status = 'active'
+    ''', (user_id,))
+    task = cursor.fetchone()
+    conn.close()
+    return task
