@@ -10,13 +10,16 @@ command_router = Router()
 class TaskStates(StatesGroup):
     waiting_for_title = State()
     waiting_for_description = State()
+    waiting_for_comment = State()
+    waiting_for_start_date = State()
+    waiting_for_end_date = State()
 
 @command_router.message(Command("create_task"))
 async def create_task(message: Message, state: FSMContext):
     user_id = message.from_user.id
     active_task = get_active_task(user_id)
-    if (active_task):
-        await message.answer(f"У вас уже есть активное дело: '{active_task[1]}' - '{active_task[2]}'")
+    if active_task:
+        await message.answer(f"У вас уже есть активное дело: '{active_task[1]}'\n\nОписание задачи: '{active_task[2]}'")
     else:
         await message.answer("Введите название дела:")
         await state.set_state(TaskStates.waiting_for_title)
@@ -29,12 +32,33 @@ async def get_task_title(message: Message, state: FSMContext):
 
 @command_router.message(TaskStates.waiting_for_description)
 async def get_task_description(message: Message, state: FSMContext):
+    await state.update_data(description=message.text)
+    await message.answer("Введите комментарий к делу:")
+    await state.set_state(TaskStates.waiting_for_comment)
+
+@command_router.message(TaskStates.waiting_for_comment)
+async def get_task_comment(message: Message, state: FSMContext):
+    await state.update_data(comment=message.text)
+    await message.answer("Введите дату начала задачи (в формате YYYY-MM-DD):")
+    await state.set_state(TaskStates.waiting_for_start_date)
+
+@command_router.message(TaskStates.waiting_for_start_date)
+async def get_start_date(message: Message, state: FSMContext):
+    await state.update_data(start_date=message.text)
+    await message.answer("Введите дату завершения задачи (в формате YYYY-MM-DD):")
+    await state.set_state(TaskStates.waiting_for_end_date)
+
+@command_router.message(TaskStates.waiting_for_end_date)
+async def get_end_date(message: Message, state: FSMContext):
     user_data = await state.get_data()
     title = user_data['title']
-    description = message.text
+    description = user_data['description']
+    comment = user_data['comment']
+    start_date = user_data['start_date']
+    end_date = message.text
     user_id = message.from_user.id
-    add_task(user_id, title, description)
-    await message.answer(f"Дело '{title}' с описанием '{description}' создано и сохранено в базе данных!")
+    add_task(user_id, title, description, comment, start_date, end_date)
+    await message.answer(f"Дело: '{title}'\n\nОписание задачи: '{description}'\n\nКомментарий: '{comment}'\n\nДатой начала: {start_date}\nДатой завершения: {end_date}\n\nУспешно создано и сохранено!")
     await state.clear()
 
 @command_router.message(Command("view_task"))
@@ -42,7 +66,7 @@ async def view_task(message: Message):
     user_id = message.from_user.id
     task = get_active_task(user_id)
     if task:
-        await message.answer(f"Ваше активное дело: '{task[1]}' - '{task[2]}'")
+        await message.answer(f"Ваше активное дело: '{task[1]}'\n\nОписание задачи: '{task[2]}'\n\nКомментарий: '{task[3]}'\n\nДата начала: {task[4]}\nДата завершения: {task[5]}")
     else:
         await message.answer("У вас нет активных дел.")
 
@@ -52,7 +76,7 @@ async def complete_active_task(message: Message):
     task = get_active_task(user_id)
     if task:
         complete_task(task[0])
-        await message.answer(f"Ваше активное дело: '{task[1]}' - '{task[2]}' - успешно завершено.")
+        await message.answer(f"Ваше активное дело: '{task[1]}'\n\nЗадача: '{task[2]}'\n\nУспешно завершено!")
     else:
         await message.answer("У вас нет активных дел.")
 
