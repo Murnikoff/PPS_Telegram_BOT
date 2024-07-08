@@ -18,7 +18,10 @@ async def process_create_task_callback(callback_query: CallbackQuery, state: FSM
     user_id = callback_query.from_user.id
     active_task = get_active_task(user_id)
     if active_task:
-        await callback_query.message.answer(f"У вас уже есть активное дело: '{active_task[1]}'\n\nЗадача: '{active_task[2]}'")
+        await callback_query.message.answer(
+            f"У вас уже есть активное дело: '{active_task[1]}'\n\n"
+            f"Описание задачи: '{active_task[2]}'"
+            )
     else:
         await callback_query.message.answer("Введите название дела:")
         await state.set_state(TaskStates.waiting_for_title)
@@ -48,7 +51,7 @@ async def process_complete_task_callback(callback_query: CallbackQuery):
         complete_task(task[0])
         await callback_query.message.answer(
             f"Ваше активное дело: '{task[1]}'\n\n"
-            f"Задача: '{task[2]}'\n\n"
+            f"Описание задачи: '{task[2]}'\n\n"
             f"Успешно завершено!"
         )
     else:
