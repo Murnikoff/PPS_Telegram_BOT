@@ -1,5 +1,6 @@
 from aiogram import Router
 from aiogram.types import CallbackQuery
+from aiogram.types import Message
 from utils.db import get_active_task, complete_task, update_task
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -68,39 +69,39 @@ async def process_edit_task_callback(callback_query: CallbackQuery, state: FSMCo
         await callback_query.message.answer("У вас нет активных дел.")
     await callback_query.answer()
 
-@callback_router.callback_query(TaskStates.waiting_for_edit_field)
-async def get_edit_field_callback(callback_query: CallbackQuery, state: FSMContext):
-    field = callback_query.message.text
+@callback_router.message(TaskStates.waiting_for_edit_field)
+async def get_edit_field(message: Message, state: FSMContext):
+    field = message.text
     if field not in ["title", "description", "comment", "start_date", "end_date"]:
-        await callback_query.message.answer("Неверное поле. Пожалуйста, введите одно из следующих: title, description, comment, start_date, end_date")
+        await message.answer("Неверное поле. Пожалуйста, введите одно из следующих: title, description, comment, start_date, end_date")
         return
     await state.update_data(edit_field=field)
-    await callback_query.message.answer(f"Введите новое значение для поля {field}:")
+    await message.answer(f"Введите новое значение для поля {field}:")
     await state.set_state(TaskStates.waiting_for_edit_value)
 
-@callback_router.callback_query(TaskStates.waiting_for_edit_value)
-async def get_edit_value_callback(callback_query: CallbackQuery, state: FSMContext):
+@callback_router.message(TaskStates.waiting_for_edit_value)
+async def get_edit_value(message: Message, state: FSMContext):
     user_data = await state.get_data()
     field = user_data['edit_field']
-    value = callback_query.message.text
-    user_id = callback_query.from_user.id
+    value = message.text
+    user_id = message.from_user.id
     task = get_active_task(user_id)
     if task:
         update_task(task[0], **{field: value})
-        await callback_query.message.answer(f"Поле {field} успешно обновлено!")
+        await message.answer(f"Поле {field} успешно обновлено!")
     else:
-        await callback_query.message.answer("У вас нет активных дел.")
+        await message.answer("У вас нет активных дел.")
     await state.clear()
 
 @callback_router.callback_query(lambda c: c.data == 'help')
 async def process_help_callback(callback_query: CallbackQuery):
     help_text = (
         "/start - Начать работу с ботом\n"
-        "/help - Показать это сообщение\n"
         "/create_task - Создать новое дело\n"
         "/view_task - Просмотреть активное дело\n"
         "/complete_active_task - Завершить активное дело\n"
         "/edit_task - Редактировать активное дело\n"
+        "/help - Показать это сообщение\n"
     )
     await callback_query.message.answer(help_text)
     await callback_query.answer()
