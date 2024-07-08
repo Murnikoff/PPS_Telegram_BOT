@@ -49,3 +49,32 @@ def complete_task(task_id, end_date=None):
     ''', (end_date, task_id))
     conn.commit()
     conn.close()
+
+def update_task(task_id, title=None, description=None, comment=None, start_date=None, end_date=None):
+    conn = sqlite3.connect('tasks.db')
+    cursor = conn.cursor()
+    fields = []
+    values = []
+
+    if title:
+        fields.append("title = ?")
+        values.append(title)
+    if description:
+        fields.append("description = ?")
+        values.append(description)
+    if comment:
+        fields.append("comment = ?")
+        values.append(comment)
+    if start_date:
+        fields.append("start_date = ?")
+        values.append(start_date)
+    if end_date:
+        fields.append("end_date = ?")
+        values.append(end_date)
+
+    if fields:
+        query = f"UPDATE tasks SET {', '.join(fields)} WHERE id = ?"
+        values.append(task_id)
+        cursor.execute(query, values)
+        conn.commit()
+    conn.close()
